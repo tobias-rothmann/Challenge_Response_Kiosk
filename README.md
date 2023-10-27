@@ -8,8 +8,17 @@ The necessity to have such an extension arose during the [SUIxBSA hackathon](htt
 This is a polished version of the hackathon implementation.
 
 ## How it works
+We adapt the classical kiosk interface to support a challenge reponse protocol. Which means, that basically everything is the same with a few twists in a few (partly new) functions, we're going to explian in the functions section.
 
-We adapt the classical kiosk interface to support a challenge reponse protocol. Which means, that basically everything is the same with a few twists in a few (partly new) functions, we're going to explian now.
+To give an intuitive overview of how it works:\
+The buyer call's `purchase` with the random challenge "rand" (so to say, sends rand to the kiosk). The kiosk upon recieving the purchase request from the buyer emits an event to let the seller (kiosk-owner) know, that someone wants to buy his item and he thus needs to sign their challenge. Once the seller signed the challenge, he sends the obtained signature back to the kiosk. The kiosk checks wether the signature is actually correct and if so, completes the trade or otherwise returns the buyers funds to them. 
+
+![Challenge Response Protocol img](CR_Kiosk_protocol.png)
+
+
+## Functions
+
+We adapt the classical kiosk interface to support a challenge reponse protocol. Which means, that basically everything is the same with a few twists in a few (partly new) functions, we're going to explian  now.
 
 `list` has the same purpose as in the classical kiosk, but expects one more parameter, the public key "pk", for the item that is listed.  
 
@@ -21,8 +30,3 @@ We adapt the classical kiosk interface to support a challenge reponse protocol. 
 Hence the funds cannot get stuck if the seller just does not respond, the buyer can simply pull_out.
 
 `is_purchasable` is a new function. It's purpose is to check wether an item can actually be purchased, or if the item was already challenged by another buyer, who waits for verification, and thus it cannot be purchased at the moment.
-
-To give an intuitive overview of how it works:
-The buyer call's `purchase` with the random challenge "rand" (so to say, sends rand to the kiosk). The kiosk upon recieving the purchase request from the buyer emits an event to let the seller (kiosk-owner) know, that someone wants to buy his item and he thus needs to sign their challenge. Once the seller signed the challenge, he sends the obtained signature back to the kiosk. The kiosk checks wether the signature is actually correct and if so, completes the trade or otherwise returns the buyers funds to them. 
-
-![Challenge Response Protocol img](CR_Kiosk_protocol.png)
