@@ -7,3 +7,4 @@ Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-fram
 
 [addresses]
 challenge_response_kiosk = "0x0"
+verificator = "0x0"
