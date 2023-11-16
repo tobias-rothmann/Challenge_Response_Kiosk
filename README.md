@@ -1,7 +1,5 @@
 # Challenge_Response_Kiosk
 
-### PurchaseCap not supported yet!!
-
 Extending SUI's Kiosk for a challenge response protocol.
 
 The necessity to have such an extension arose during the [SUIxBSA hackathon](https://sui-bsa-hackathon.devfolio.co/projects) at EPFL, when we were building the [SuiSeal](https://github.com/TUM-Blockchain-Club/SuiSeal) Application. 
@@ -30,3 +28,7 @@ We adapt the classical kiosk interface to support a challenge reponse protocol. 
 Hence the funds cannot get stuck if the seller just does not respond, the buyer can simply pull_out.
 
 `is_purchasable` is a new function. It's purpose is to check wether an item can actually be purchased, or if the item was already challenged by another buyer, who waits for verification, and thus it cannot be purchased at the moment.
+
+## How do adapt
+
+The cryptographic pirimitve behind the challenge-reponse protocol is capsulated in the 'verificator.move' file. The standard implementation comes with ed25519 sigantures (i.e. buyer challenges with a random seed and seller solves the challenge by signing the random seed with the object specific private key). However, this cryptographic primitve can be changed to virtually everything (for example to accept zk-proofs, which proof computation that would be too much to compute on chain), one would only need to exchange the verificator.move file. 
