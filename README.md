@@ -5,6 +5,9 @@ Extending SUI's Kiosk for a challenge response protocol.
 The necessity to have such an extension arose during the [SUIxBSA hackathon](https://sui-bsa-hackathon.devfolio.co/projects) at EPFL, when we were building the [SuiSeal](https://github.com/TUM-Blockchain-Club/SuiSeal) Application. 
 This is a polished version of the hackathon implementation.
 
+### DISCLAIMER
+This is not a production ready tested, audited or formally verified version. Use at your own risk. 
+
 ## How it works
 We adapt the classical kiosk interface to support a challenge reponse protocol. Which means, that basically everything is the same with a few twists in a few (partly new) functions, we're going to explian in the [functions section](#functions).
 
