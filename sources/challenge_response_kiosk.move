@@ -44,7 +44,7 @@ module challenge_response_kiosk::challenge_response_kiosk {
     use sui::object::{Self, ID, UID};
     use sui::transfer_policy::{TransferPolicy, TransferRequest};
     use sui::balance::{Balance};
-    use sui::coin::{Coin};
+    use sui::coin::{Self, Coin};
     use sui::sui::SUI;
     use sui::event;
     use verificator::verificator::verify_sig;
@@ -53,6 +53,11 @@ module challenge_response_kiosk::challenge_response_kiosk {
     const ENotBuyer: u64 = 0;
 
     const EItemReserved: u64 = 1;
+
+    const EIncorrectAmount: u64 = 2;
+
+    const EWrongKiosk : u64 = 3;
+    
 
     struct EXT has drop {}
 
@@ -174,6 +179,31 @@ module challenge_response_kiosk::challenge_response_kiosk {
         list<T>(self, cap, id, price)
     }
 
+    public fun list_with_purchase_cap<T: key + store>(
+        self: &mut Kiosk, cap: &KioskOwnerCap, id: ID, min_price: u64, ctx: &mut TxContext
+    ): kiosk::PurchaseCap<T> {
+        let pc = kiosk::list_with_purchase_cap<T>(self,cap,id,min_price,ctx);
+        let ext_bag = kiosk_extension::storage_mut<EXT>(EXT {}, self);
+        bag::add(ext_bag, id, (none() : Option<BuyerPackage<T>>));
+        pc
+    }
+
+    public fun purchase_with_cap<T: key + store>(
+        self: &mut Kiosk, purchase_cap: kiosk::PurchaseCap<T>, rand: vector<u8>, pk: vector<u8>, payment: Coin<SUI>, ctx: &mut TxContext
+    ) {
+        //purchase cap checks to ensure seller doesn't has to verify false caps
+        let paid = coin::value(&payment);
+        assert!(paid >= purchase_cap_min_price(&purchase_cap), EIncorrectAmount);
+        assert!(object::id(self) == purchase_cap_kiosk(&purchase_cap), EWrongKiosk);
+
+        let ext_bag = kiosk_extension::storage_mut<EXT>(EXT {}, self);
+        let id = purchase_cap_item(&purchase_cap);
+        let value_at_id = bag::borrow<ID, Option<BuyerPackage<T>>>(ext_bag, id);
+        assert!(option::is_none(value_at_id), EItemReserved);
+        bag::add(ext_bag, id, BuyerPackage<T> {challenge: rand, pk, coins: payment, buyer: sender(ctx), cap : some(purchase_cap)});
+        event::emit(SignChallenge {rand, id, buyer:sender(ctx)})
+    }
+
     /**
         pull_out from a deal (buyer side), withdraws the challenge and returns the funds to the buyer 
         (as long as the trade has not been processed). Makes the item again purchasable by other interested buyers. 
@@ -182,9 +212,14 @@ module challenge_response_kiosk::challenge_response_kiosk {
         let ext_bag = kiosk_extension::storage_mut<EXT>(EXT {}, self);
         let BuyerPackage<T> {challenge:_, pk:_, coins, buyer, cap} = bag::remove(ext_bag, id);
         assert!(sender(ctx) == buyer, ENotBuyer);
+        if (option::is_none<PurchaseCap<T>>(&cap)) {
+            option::destroy_none<PurchaseCap<T>>(cap);
+        } else {
+            let p_cap = option::destroy_some<PurchaseCap<T>>( cap);
+            transfer::public_transfer(p_cap, buyer);
+        };
         transfer::public_transfer(coins, buyer);
         event::emit(SignChallengeWithdrawn {id, buyer})
-        // TODO return cap to sender if exists
     }
 
     /**
@@ -196,6 +231,12 @@ module challenge_response_kiosk::challenge_response_kiosk {
     ) {
         let ext_bag = kiosk_extension::storage_mut<EXT>(EXT {}, self);
         let BuyerPackage<T> {challenge:_, pk:_, coins, buyer, cap : cap_opt} = bag::remove(ext_bag, id);
+        if (option::is_none<PurchaseCap<T>>(&cap_opt)) {
+            option::destroy_none<PurchaseCap<T>>(cap_opt);
+        } else {
+            let p_cap = option::destroy_some<PurchaseCap<T>>( cap_opt);
+            transfer::public_transfer(p_cap, buyer);
+        };
         transfer::public_transfer(coins, buyer);
         kiosk::delist<T>(self,cap,id)
     }
@@ -208,7 +249,13 @@ module challenge_response_kiosk::challenge_response_kiosk {
         self: &mut Kiosk, cap: &KioskOwnerCap, id: ID
     ): T {
         let ext_bag = kiosk_extension::storage_mut<EXT>(EXT {}, self);
-        let BuyerPackage<T> {challenge:_, pk:_, coins, buyer, cap: purchase_cap} = bag::remove(ext_bag, id);
+        let BuyerPackage<T> {challenge:_, pk:_, coins, buyer, cap: cap_opt} = bag::remove(ext_bag, id);
+        if (option::is_none<PurchaseCap<T>>(&cap_opt)) {
+            option::destroy_none<PurchaseCap<T>>(cap_opt);
+        } else {
+            let p_cap = option::destroy_some<PurchaseCap<T>>( cap_opt);
+            transfer::public_transfer(p_cap, buyer);
+        };
         transfer::public_transfer(coins, buyer);
         kiosk::take<T>(self, cap, id)
     }
@@ -383,28 +430,9 @@ module challenge_response_kiosk::challenge_response_kiosk {
         kiosk::withdraw(self, cap,amount,ctx)
     }
 
-    //==unaltered kiosk functions that are TODO==
-
     public fun return_purchase_cap<T: key + store>(
         self: &mut Kiosk, purchase_cap: kiosk::PurchaseCap<T>
     ) {
-        //TODO
         kiosk::return_purchase_cap<T>(self, purchase_cap)
-    }
-
-    public fun list_with_purchase_cap<T: key + store>(
-        self: &mut Kiosk, cap: &KioskOwnerCap, id: ID, min_price: u64, ctx: &mut TxContext
-    ): kiosk::PurchaseCap<T> {
-        let pc = kiosk::list_with_purchase_cap<T>(self,cap,id,min_price,ctx);
-        let ext_bag = kiosk_extension::storage_mut<EXT>(EXT {}, self);
-        bag::add(ext_bag, id, (none() : Option<BuyerPackage<T>>));
-        pc
-    }
-
-    public fun purchase_with_cap<T: key + store>(
-        self: &mut Kiosk, purchase_cap: kiosk::PurchaseCap<T>, payment: Coin<SUI>
-    ): (T, TransferRequest<T>) {
-        //TODO
-        kiosk::purchase_with_cap<T>(self, purchase_cap, payment)
     }
 }
