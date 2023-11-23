@@ -23,7 +23,11 @@ We adapt the classical kiosk interface to support a challenge reponse protocol. 
 
 `list` has the same purpose as in the classical kiosk, but expects one more parameter, the public key "pk", for the item that is listed.  
 
-`purchase` has the same purpose as in the classical kiosk, but expects one more parameter, the challenge "rand".  Moreover, purchase, in contrast to the classical kiosk, cannot complete the trade on it own, but emits an event to let the seller (kiosk owner) know that he has to solve the challenge (once the challenge is solved by the seller, the kiosk automatically completes the trade).
+`purchase` has the same purpose as in the classical kiosk, but expects one more parameter, the challenge "rand".  Moreover, purchase, in contrast to the classical kiosk, cannot complete the trade on it's own, but emits an event to let the seller (kiosk owner) know that he has to solve the challenge (once the challenge is solved by the seller, the kiosk automatically completes the trade).
+
+`list_with_purchase_cap` has the same purpose as in the classical kiosk, but expects one more parameter, the public key "pk", for the item that is listed.  
+
+`purchase_with_cap` has the same purpose as in the classical kiosk, but expects one more parameter, the challenge "rand".  Moreover, purchase_with_cap, in contrast to the classical kiosk, cannot complete the trade on it's own, but emits an event to let the seller (kiosk owner) know that he has to solve the challenge (once the challenge is solved by the seller, the kiosk automatically completes the trade).
 
 `submit_sig` is a new function. It's purpose is verify that the challenge was in fact solved and complete the trade upon that or refund the buyer.
 
@@ -34,4 +38,4 @@ Hence the funds cannot get stuck if the seller just does not respond, the buyer 
 
 ## How do adapt
 
-The cryptographic pirimitve behind the challenge-reponse protocol is capsulated in the 'verificator.move' file. The standard implementation comes with ed25519 sigantures (i.e. buyer challenges with a random seed and seller solves the challenge by signing the random seed with the object specific private key). However, this cryptographic primitve can be changed to virtually everything (for example to accept zk-proofs, which proof computation that would be too much to compute on chain), one would only need to exchange the verificator.move file. 
+The cryptographic pirimitve behind the challenge-reponse protocol is capsulated in the 'verificator.move' file. The standard implementation comes with ed25519 sigantures (i.e. buyer challenges with a random seed and seller solves the challenge by signing the random seed with the object specific private key). However, this cryptographic primitve can be changed to virtually everything (for example to accept zk-proofs, to prove computation that would be too much to compute on chain), one would only need to exchange the verificator.move file. 
