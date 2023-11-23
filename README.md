@@ -36,6 +36,6 @@ Hence the funds cannot get stuck if the seller just does not respond, the buyer 
 
 `is_purchasable` is a new function. It's purpose is to check wether an item can actually be purchased, or if the item was already challenged by another buyer, who waits for verification, and thus it cannot be purchased at the moment.
 
-## How do adapt
+## How do adapt (the cryptographic primitve)
 
 The cryptographic pirimitve behind the challenge-reponse protocol is capsulated in the 'verificator.move' file. The standard implementation comes with ed25519 sigantures (i.e. buyer challenges with a random seed and seller solves the challenge by signing the random seed with the object specific private key). However, this cryptographic primitve can be changed to virtually everything (for example to accept zk-proofs, to prove computation that would be too much to compute on chain), one would only need to exchange the verificator.move file. 
